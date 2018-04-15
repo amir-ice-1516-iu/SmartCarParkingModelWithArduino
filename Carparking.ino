@@ -1,41 +1,45 @@
-#include<Servo.h>
-#include <LiquidCrystal.h>
-const int rs = 23, en = 22, d4 = 24, d5 = 26, d6 = 28, d7 = 30;
-LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
-Servo gate;
-bool triger=false;
+#include<Servo.h>  // Servo library for servo motor control to demonstrate gate open and locked activity.
+#include <LiquidCrystal.h> // library file for LCD display
+const int rs = 23, en = 22, d4 = 24, d5 = 26, d6 = 28, d7 = 30; // Initiating pins for LCD display
+LiquidCrystal lcd(rs, en, d4, d5, d6, d7); // Creating LCD object to access and control LCD display texts
+Servo gate; // creating SERVO object to contol servo motor
+bool triger=false; 
 int front,back;
 int sensorValues[7],availableParking[7];
 int cars=0;
-void setup(void)
+void setup(void) 
 {
   lcd.begin(20, 4);
   for(int i=2;i<9;++i)
       pinMode(i,OUTPUT);
 
-  Serial.begin(9600);
-  pinMode(54,INPUT);
+  Serial.begin(9600);  // for Serial monitoring at baud rate 9600 (9600 bits per second)
+  pinMode(54,INPUT); // Selecting pin mode for further operations
   pinMode(9,INPUT);
   pinMode(10,INPUT);
   pinMode(11,OUTPUT);  
   gate.attach(8);
   digitalWrite(11,HIGH);
   gate.write(0);
-  delay(250);
+  delay(200);
   digitalWrite(11,LOW);
 }
 void loop(void)
 {
+  delay(200);
   senceValues();
   senceDoor();
   countCars();
-  if(front==0 && cars<6)
+  if(front==0)
   {
-    digitalWrite(11,HIGH);
+    if(cars<6)
+    {
+     digitalWrite(11,HIGH);
     gate.write(90);
-    delay(250);
+    delay(400);
     digitalWrite(11,LOW);
     senceDoor();
+    lcd.clear();
     lcd.setCursor(0,0);
     lcd.print("|------------------|");
     lcd.setCursor(0,1);
@@ -52,37 +56,49 @@ void loop(void)
       senceDoor();
       delay(50);
     }
-    delay(1500);
     digitalWrite(11,HIGH);
     gate.write(0);
-    delay(250);
+    delay(400);
     digitalWrite(11,LOW);
-    triger = true;
+    delay(500);
+    triger = true; 
+    }
+    else
+    {
+      lcd.clear();
+      lcd.setCursor(0,0);
+      lcd.print("|------------------|");
+      lcd.setCursor(0,1);
+      lcd.print("Not Enough Space for");
+      lcd.setCursor(0,2);
+      lcd.print("      Parking       ");
+      lcd.setCursor(0,3);
+      lcd.print("|------------------|");
+    }
   }
   if(back==0)
   {
-    if(!triger)
+    if(!triger){
+      digitalWrite(11,HIGH);
+    gate.write(90);
+    delay(400);
+    digitalWrite(11,LOW);
+    senceDoor();
+    while(front!=0)
     {
-      digitalWrite(11,HIGH);
-      gate.write(90);
-      delay(250);
-      digitalWrite(11,LOW);
       senceDoor();
-      while(front!=0)
-      {
-        senceDoor();
-        delay(5);
-      }
-      delay(1000);
-      digitalWrite(11,HIGH);
-      gate.write(0);
-      delay(250);
-      digitalWrite(11,LOW);
+      delay(5);
+    }
+    digitalWrite(11,HIGH);
+    gate.write(0);
+    delay(400);
+    digitalWrite(11,LOW);
+    delay(500);
     }
     else triger = false;
   }
   lcd.setCursor(1,0);
-  lcd.print("Parking Dash Board ");
+  lcd.print(" Parking Dash Board ");
   lcd.setCursor(0,1);
   if(availableParking[1]==1) lcd.print("Empty  ");
   else lcd.print("Filled  ");
@@ -123,11 +139,9 @@ void senceValues(void)
   for(int i=1;i<7;++i)
   {
     digitalWrite(i+1,HIGH);
-    delay(5);
     sensorValues[i] = analogRead(54);
-    delay(5);
     digitalWrite(i+1,LOW);
-    if(sensorValues[i]<25) 
+    if(sensorValues[i]<100) 
        availableParking[i] = 0;
     else availableParking[i]=1;
   }
@@ -141,4 +155,3 @@ int allotePlace(void)
         return i;
   }
 }
-
